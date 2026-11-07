@@ -30,24 +30,27 @@ LOG_LEVEL=debug node lib/renovate.ts --platform=github --token="$GITHUB_TOKEN" k
 
 ## Result
 
-Running the PR branch (`9f31341`) against this repo produced two security PRs, each changing `package-lock.json` only:
+Running the PR branch (`428afb5`) against this repo produced two security PRs, each changing `package-lock.json` only:
 
 - **[#1 — Update dependency braces to v3.0.3 [SECURITY]](https://github.com/khvn26/renovate-npm-transitive-osv-repro/pull/1)** — `braces` 3.0.2 → 3.0.3.
-- **[#2 — Update dependency semver to v5.7.2 [SECURITY]](https://github.com/khvn26/renovate-npm-transitive-osv-repro/pull/2)** — all three copies fixed: 5.7.1 → 5.7.3, 6.3.0 → 6.3.2, 7.5.1 → 7.8.6.
+- **[#2 — Update dependency semver to v7.5.2 [SECURITY]](https://github.com/khvn26/renovate-npm-transitive-osv-repro/pull/2)** — one row per locked version, each with its own fix: 5.7.1 → 5.7.2, 6.3.0 → 6.3.1, 7.5.1 → 7.5.2.
 
 ```
-DEBUG: Vulnerability GHSA-grv7-fg5c-xmjg affects braces 3.0.2
 DEBUG: Vulnerability GHSA-c2qf-rxjj-qqgw affects semver 5.7.1
-DEBUG: Dependency: braces, is only in a lock file, but a vulnerability alert matches it - looking it up
-DEBUG: Dependency: semver, is only in a lock file, but a vulnerability alert matches it - looking it up
-DEBUG: 2 flattened updates found: braces, semver
+DEBUG: Vulnerability GHSA-c2qf-rxjj-qqgw affects semver 6.3.0
+DEBUG: Vulnerability GHSA-c2qf-rxjj-qqgw affects semver 7.5.1
+DEBUG: Vulnerability GHSA-grv7-fg5c-xmjg affects braces 3.0.2
+DEBUG: 4 flattened updates found: braces, semver, semver, semver
 DEBUG: Executing command npm update --package-lock-only --no-audit --ignore-scripts braces
 DEBUG: Executing command npm update --package-lock-only --no-audit --ignore-scripts semver
 ```
 
-On each branch, `npm ci` succeeds and `npm audit` no longer reports the remediated package.
+`npm update` takes no version, so each locked version moves to the newest release its dependents allow. Where that differs from the PR, Renovate says so in an artifact notice comment, as on #2:
 
-Known gaps, visible here:
+> Transitive dependencies are updated with `npm update`, within the ranges the packages which depend on them allow:
+>
+> - `semver` is now locked at `5.7.3`, `6.3.2` and `7.8.6`, the newest versions the packages which depend on it allow.
 
-- `npm update` cannot take a version, so each copy moves to the newest release its parent allows, not the lowest fixed one, and the PR title of #2 names only the lowest locked copy (5.7.1 → 5.7.2).
-- The Dependency Dashboard lists the transitive deps as `Updates: undefined`.
+On each branch, `npm ci` and `npm ls --all` succeed, and `npm audit` no longer reports the remediated package.
+
+The Dependency Dashboard lists the transitive deps as `Updates: undefined`, which is fixed separately in [renovatebot/renovate#47833](https://github.com/renovatebot/renovate/pull/47833).
